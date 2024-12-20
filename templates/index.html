@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dialogue Summarizer</title>
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css"
+    />
+</head>
+<body>
+    <div class="container mt-5">
+    <h1 class="text-center">Dialogue Summarizer</h1>
+    <form id="dialogueForm">
+        <!-- Dialogue textbox with Generate Random Dialogue button aligned horizontally -->
+        <div class="mb-3">
+            <label for="dialogue" class="form-label">Enter Dialogue</label>
+            <div class="d-flex align-items-start">
+                <textarea
+                    id="dialogue"
+                    class="form-control flex-grow-1"
+                    rows="5"
+                    placeholder="Enter your conversation here..."
+                    required
+                    style="resize: vertical; overflow-y: auto;"
+                ></textarea>
+                <button
+                    type="button"
+                    id="generateRandom"
+                    class="btn btn-secondary ms-3"
+                    style="white-space: nowrap;"
+                >
+                    Generate Random Dialogue
+                </button>
+            </div>
+        </div>
+
+
+        <div class="mb-3 mt-4">
+            <label for="promptType" class="form-label">Choose Prompting Type</label>
+            <div class="d-flex align-items-center">
+                <select id="promptType" class="form-control flex-grow-1 me-3">
+                    <option value="few">Few-shot</option>
+                    <option value="zero">Zero-shot</option>
+                    <option value="one">One-shot</option>
+                </select>
+                <button
+                    id="generatePromptBtn"
+                    class="btn btn-secondary"
+                    type="button"
+                    style="white-space: nowrap;"
+                >
+                    Generate Prompt
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-4 mb-3">
+            <label for="generatedPrompt" class="form-label">Generated Prompt</label>
+            <textarea
+                id="generatedPrompt"
+                class="form-control"
+                rows="20"
+                readonly
+                placeholder="Prompt will be displayed here..."
+            ></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="do_sample" class="form-label">Enable Sampling (do_sample)</label>
+            <select id="do_sample" class="form-control">
+                <option value="true">True</option>
+                <option value="false">False</option>
+            </select>
+        </div>
+
+        <div id="sampling-options">
+            <div class="mb-3">
+                <label for="temperature" class="form-label">Temperature (0 - 1)</label>
+                <input
+                    type="number"
+                    id="temperature"
+                    class="form-control"
+                    step="0.1"
+                    value="0.7"
+                    min="0"
+                    max="1"
+                    required
+                />
+            </div>
+
+            <div class="mb-3">
+                <label for="top_k" class="form-label">Top-k (>= 0)</label>
+                <input
+                    type="number"
+                    id="top_k"
+                    class="form-control"
+                    value="50"
+                    min="0"
+                    required
+                />
+            </div>
+
+            <div class="mb-3">
+                <label for="top_p" class="form-label">Top-p (0 - 1)</label>
+                <input
+                    type="number"
+                    id="top_p"
+                    class="form-control"
+                    step="0.01"
+                    value="0.99"
+                    min="0"
+                    max="1"
+                    required
+                />
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Summarize</button>
+    </form>
+    <div class="mt-4">
+        <h4>Summary:</h4>
+        <p id="summary" class="border p-3"></p>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById("dialogueForm");
+    const summaryElement = document.getElementById("summary");
+    const generateRandomButton = document.getElementById("generateRandom");
+    const dialogueTextArea = document.getElementById("dialogue");
+    const doSampleDropdown = document.getElementById("do_sample");
+    const samplingOptions = document.getElementById("sampling-options");
+    const promptTypeDropdown = document.getElementById("promptType");
+    const generatedPromptTextArea = document.getElementById("generatedPrompt");
+    const generatePromptButton = document.getElementById("generatePromptBtn");
+
+
+    doSampleDropdown.addEventListener("change", () => {
+        if (doSampleDropdown.value === "true") {
+            samplingOptions.style.display = "block"; // Show sampling fields
+        } else {
+            samplingOptions.style.display = "none"; // Hide sampling fields
+        }
+    });
+
+    window.addEventListener("load", () => {
+        if (doSampleDropdown.value === "true") {
+            samplingOptions.style.display = "block"; // Show sampling fields
+        } else {
+            samplingOptions.style.display = "none"; // Hide sampling fields
+        }
+    });
+
+
+    generatePromptButton.addEventListener("click", async () => {
+        const promptType = promptTypeDropdown.value; // Get selected prompt type
+        const dialogue = dialogueTextArea.value; // Get the entered dialogue
+
+        if (!dialogue.trim()) {
+            alert("Please enter a dialogue to generate the prompt.");
+            return;
+        }
+
+        // Fetch the prompt from the server
+        try {
+            const response = await fetch("/generate-prompt", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ dialogue, prompt_type: promptType }),
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                generatedPromptTextArea.value = data.prompt; // Display the generated prompt
+            } else {
+                generatedPromptTextArea.value = `Error: ${data.error}`;
+            }
+        } catch (error) {
+            generatedPromptTextArea.value = `Error: ${error.message}`;
+        }
+    });
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const prompt = dialogueTextArea.value;
+        const doSample = doSampleDropdown.value === "true";
+        const temperature = parseFloat(document.getElementById("temperature").value);
+        const topK = parseInt(document.getElementById("top_k").value, 10);
+        const topP = parseFloat(document.getElementById("top_p").value);
+
+        summaryElement.innerText = "Loading...";
+
+        try {
+            const response = await fetch("/summarize", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ prompt, do_sample: doSample, ...(doSample && { temperature, top_k: topK, top_p: topP }) }),
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                summaryElement.innerText = data.summary;
+            } else {
+                summaryElement.innerText = `Error: ${data.error}`;
+            }
+        } catch (error) {
+            summaryElement.innerText = `Error: ${error.message}`;
+        }
+    });
+
+    generateRandomButton.addEventListener("click", async () => {
+        try {
+            const response = await fetch("/random-dialogue");
+            const data = await response.json();
+            if (response.ok) {
+                dialogueTextArea.value = data.dialogue;
+            } else {
+                alert(`Error: ${data.error}`);
+            }
+        } catch (error) {
+            alert(`Error: ${error.message}`);
+        }
+    });
+</script>
+</body>
+</html>
