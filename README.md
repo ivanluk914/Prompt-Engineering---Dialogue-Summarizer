@@ -48,8 +48,8 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone <YOUR_REPOSITORY_URL>
-cd <YOUR_REPOSITORY_NAME>
+git clone https://github.com/ivanluk914/Prompt-Engineering---Dialogue-Summarizer.git
+cd Prompt-Engineering---Dialogue-Summarizer
 ```
 
 ### 2. Build and Run Locally
