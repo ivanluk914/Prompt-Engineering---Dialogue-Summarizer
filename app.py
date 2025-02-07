@@ -2,15 +2,21 @@ from flask import Flask, request, jsonify, render_template
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, GenerationConfig
 from datasets import load_dataset
 import random
+from tqdm.auto import tqdm
+import sys
 
 app = Flask(__name__)
 
+print("Loading dataset...", file=sys.stderr)
 huggingface_dataset_name = "knkarthick/dialogsum"
 dataset = load_dataset(huggingface_dataset_name)
+print("Dataset loaded successfully!", file=sys.stderr)
 
+print("Loading model and tokenizer...", file=sys.stderr)
 model_name = "google/flan-t5-base"
 model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+print("Model and tokenizer loaded successfully!", file=sys.stderr)
 
 @app.route("/")
 def index():

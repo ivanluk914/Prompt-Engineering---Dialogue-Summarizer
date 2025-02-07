@@ -6,3 +6,4 @@ torchdata
 tqdm
 gunicorn
 numpy<2
+accelerate>=0.26.0

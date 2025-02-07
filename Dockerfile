@@ -18,7 +18,7 @@ COPY ./templates ./templates
 COPY requirements.txt .
 
 # Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt --progress-bar on
 
 # Copy the rest of the application code into the container
 COPY ./app.py .
@@ -27,4 +27,4 @@ COPY ./app.py .
 EXPOSE 5001
 
 # Start the Gunicorn server
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5001", "--timeout", "120", "app:app"]
+CMD ["gunicorn", "--preload", "-w", "4", "-b", "0.0.0.0:5001", "--timeout", "120", "app:app"]
